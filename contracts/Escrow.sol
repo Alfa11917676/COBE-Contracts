@@ -11,6 +11,7 @@ contract escrow is Backend, OwnableUpgradeable {
 
     event Deposited(address indexed sender, address indexed receiver, uint256 weiAmount);
     event Withdrawn(address indexed sender, address indexed receiver, uint256 weiAmount);
+    event ForcedWithdrawn(address indexed withdrawe, uint256 weiAmount);
     ICBS CBS;
     ICBR CBR;
     address public signer;
@@ -22,7 +23,7 @@ contract escrow is Backend, OwnableUpgradeable {
         __Backend_init();
         __Ownable_init();
         CBS = ICBS(_cbs);
-        CBR = ICBR(_cbr)
+        CBR = ICBR(_cbr);
     }
 
     function deposit(BackendSigner memory whitelist) external {
@@ -38,23 +39,26 @@ contract escrow is Backend, OwnableUpgradeable {
     function withdraw(BackendSigner memory whitelist, uint slotId ) external {
         require (getSigner(whitelist) == signer,'!Signer');
         require (msg.sender == whitelist.senderAddress || msg.sender == owner(),'!Allowed');
-        //uint amount = _deposits[whitelist.senderAddress][slotId];
         require (_spents[whitelist.senderAddress][slotId]+ whitelist.amount<=_deposits[msg.sender][slotId],'Not Allowed');
-        //require (amount > 0,'Insufficient Amount');
-        if (_spents[msg.sender][slotId]+ whitelist.amount == _deposits[msg.sender])
+        if (_spents[whitelist.senderAddress][slotId]+ whitelist.amount == _deposits[msg.sender])
         delete _deposits[whitelist.senderAddress][slotId];
-        _spents[msg.sender][slotId] += whitelist.amount;
+        _spents[whitelist.senderAddress][slotId] += whitelist.amount;
         CBS.transfer(whitelist.receiverAddress,whitelist.amount);
         CBR.burnCBRFromPartnerControllers(whitelist.senderAddress,whitelist.amount);
-        emit Withdrawn(msg.sender, whitelist.receiverAddress, whitelist.amount);
+        emit Withdrawn(whitelist.senderAddress, whitelist.receiverAddress, whitelist.amount);
     }
 
-    function mutualCancellation(BackEnd memory whitelist) external {
+    function mutualCancellation(BackEnd memory whitelist, uint slotId) external {
         require (getSigner(whitelist) == signer, '!Signer');
-        require (smg.sender == whitelist.senderAddress || msg.sender == owner(),'!Allowed');
-        require (_spents[msg.sender][slotId]+ whitelist.amount<=_deposits[msg.sender][slotId],'Not Allowed');
-        //require ()
-        if (_spents[])
+        require (msg.sender == whitelist.senderAddress || msg.sender == owner(),'!Allowed');
+        require (_spents[whitelist.senderAddress][slotId]+ whitelist.amount<=_deposits[whitelist.senderAddress][slotId],'Not Allowed');
+        if (_spents[whitelist.senderAddress][slotId] + whitelist.amount == _deposits[whitelist.senderAddress][slotId]) {
+            delete _deposits[whitelist.senderAddress][slotId];
+        }
+        _spents[whitelist.senderAddress][slotId] += whitelist.amount;
+        CBS.transfer(whitelist.senderAddress, whitelist.amount);
+        CBR.burnCBRFromPartnerControllers(whitelist.senderAddress, whitelist.amount);
+        emit ForcedWithdrawn(whitelist.senderAddress, whitelist.amount);
     }
 
     function addCBSAddress (address _token) external onlyOwner {
