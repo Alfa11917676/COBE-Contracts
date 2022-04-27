@@ -3,9 +3,9 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
 
-contract Backend is EIP712 {
+contract Backend is EIP712Upgradeable {
 
     string private constant SIGNING_DOMAIN = "COBE";
     string private constant SIGNATURE_VERSION = "1";
@@ -20,8 +20,8 @@ contract Backend is EIP712 {
         bytes signature;
     }
 
-    constructor() EIP712(SIGNING_DOMAIN, SIGNATURE_VERSION){
-
+    function __Backend_init() internal {
+        __EIP712_init(SIGNING_DOMAIN, SIGNATURE_VERSION);
     }
 
     function getSigner(BackendSigner memory whitelist) public view returns(address){
@@ -38,13 +38,13 @@ contract Backend is EIP712 {
                 whitelist.action,
                 whitelist.timestamp,
                 whitelist.bankBalance,
-                whitelist.amountToMint
+                whitelist.amount
             )));
     }
 
     function _verify(BackendSigner memory whitelist) internal view returns (address) {
         bytes32 digest = _hash(whitelist);
-        return ECDSA.recover(digest, whitelist.signature);
+        return ECDSAUpgradeable.recover(digest, whitelist.signature);
     }
 
 }

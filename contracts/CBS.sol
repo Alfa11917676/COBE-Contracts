@@ -25,7 +25,7 @@ contract CBS is ERC20,Ownable,Backend{
 
     function burnCBSFromPartnerControllers (address _user, uint _amount) external {
             require(onlyControllers[msg.sender],'!Controller');
-            currentSupply -= amount;
+            currentSupply -= _amount;
             _burn(_user, _amount);
     }
 
