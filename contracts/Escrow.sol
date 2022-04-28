@@ -39,22 +39,21 @@ contract escrow is Backend, OwnableUpgradeable {
     function withdraw(BackendSigner memory whitelist, uint slotId ) external {
         require (getSigner(whitelist) == signer,'!Signer');
         require (msg.sender == whitelist.senderAddress || msg.sender == owner(),'!Allowed');
-        require (_spents[whitelist.senderAddress][slotId]+ whitelist.amount<=_deposits[msg.sender][slotId],'Not Allowed');
-        if (_spents[whitelist.senderAddress][slotId]+ whitelist.amount == _deposits[msg.sender])
-        delete _deposits[whitelist.senderAddress][slotId];
+        require (_spents[whitelist.senderAddress][slotId] + whitelist.amount<=_deposits[msg.sender][slotId],'Not Allowed');
+        if (_spents[whitelist.senderAddress][slotId] + whitelist.amount == _deposits[msg.sender][slotId])
+            delete _deposits[whitelist.senderAddress][slotId];
         _spents[whitelist.senderAddress][slotId] += whitelist.amount;
         CBS.transfer(whitelist.receiverAddress,whitelist.amount);
         CBR.burnCBRFromPartnerControllers(whitelist.senderAddress,whitelist.amount);
         emit Withdrawn(whitelist.senderAddress, whitelist.receiverAddress, whitelist.amount);
     }
 
-    function mutualCancellation(BackEnd memory whitelist, uint slotId) external {
+    function mutualCancellation(BackendSigner memory whitelist, uint slotId) external {
         require (getSigner(whitelist) == signer, '!Signer');
         require (msg.sender == whitelist.senderAddress || msg.sender == owner(),'!Allowed');
         require (_spents[whitelist.senderAddress][slotId]+ whitelist.amount<=_deposits[whitelist.senderAddress][slotId],'Not Allowed');
-        if (_spents[whitelist.senderAddress][slotId] + whitelist.amount == _deposits[whitelist.senderAddress][slotId]) {
+        if (_spents[whitelist.senderAddress][slotId] + whitelist.amount == _deposits[whitelist.senderAddress][slotId])
             delete _deposits[whitelist.senderAddress][slotId];
-        }
         _spents[whitelist.senderAddress][slotId] += whitelist.amount;
         CBS.transfer(whitelist.senderAddress, whitelist.amount);
         CBR.burnCBRFromPartnerControllers(whitelist.senderAddress, whitelist.amount);

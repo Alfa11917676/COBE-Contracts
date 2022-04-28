@@ -1,9 +1,10 @@
 require("dotenv").config();
-
 require("@nomiclabs/hardhat-etherscan");
 require("@nomiclabs/hardhat-waffle");
 require("hardhat-gas-reporter");
 require("solidity-coverage");
+require("@nomiclabs/hardhat-etherscan");
+require('@openzeppelin/hardhat-upgrades');
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -22,12 +23,13 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
  * @type import('hardhat/config').HardhatUserConfig
  */
 module.exports = {
-  solidity: "0.8.4",
+  solidity: "0.8.7",
   networks: {
-    ropsten: {
-      url: process.env.ROPSTEN_URL || "",
-      accounts:
-        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    matic: {
+      // https://polygon-mumbai.infura.io/v3/cc04cf86d67044cca564b6f196bc23b0
+      // url: `https://polygon-mumbai.g.alchemy.com/v2/${process.env.INFURA_KEY}`,
+      url: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_KEY}`,
+      accounts:[`${process.env.PRIVATE_KEY}`]
     },
   },
   gasReporter: {
@@ -35,6 +37,10 @@ module.exports = {
     currency: "USD",
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: {
+      // polygon: "YOUR_POLYGONSCAN_API_KEY",
+      // polygon: process.env.POLYGON_SCAN_API,
+      polygonMumbai: process.env.POLYGON_SCAN_API,
+    }
   },
 };

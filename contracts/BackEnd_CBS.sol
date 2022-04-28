@@ -3,15 +3,14 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
+import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 
-contract Backend is EIP712Upgradeable {
+contract Backend is EIP712 {
 
-    string private constant SIGNING_DOMAIN = "COBE";
+    string private constant SIGNING_DOMAIN = "COBE_CBS";
     string private constant SIGNATURE_VERSION = "1";
 
     struct BackendSigner {
-        address senderAddress; //the address of the interacting user
         address receiverAddress;
         bool action; // this should be mint/burn. If mint = true, if burn = false.
         uint256 timestamp; //nonce
@@ -20,9 +19,7 @@ contract Backend is EIP712Upgradeable {
         bytes signature;
     }
 
-    function __Backend_init() internal {
-        __EIP712_init(SIGNING_DOMAIN, SIGNATURE_VERSION);
-    }
+     constructor() EIP712(SIGNING_DOMAIN, SIGNATURE_VERSION){}
 
     function getSigner(BackendSigner memory whitelist) public view returns(address){
         return _verify(whitelist);
@@ -32,8 +29,7 @@ contract Backend is EIP712Upgradeable {
 
     function _hash(BackendSigner memory whitelist) internal view returns (bytes32) {
         return _hashTypedDataV4(keccak256(abi.encode(
-                keccak256("BackendSigner(address senderAddress,address receiverAddress,bool action,uint256 timestamp,uint256 bankBalance,uint256 amount)"),
-                whitelist.senderAddress,
+                keccak256("BackendSigner(address receiverAddress,bool action,uint256 timestamp,uint256 bankBalance,uint256 amount)"),
                 whitelist.receiverAddress,
                 whitelist.action,
                 whitelist.timestamp,
@@ -44,7 +40,7 @@ contract Backend is EIP712Upgradeable {
 
     function _verify(BackendSigner memory whitelist) internal view returns (address) {
         bytes32 digest = _hash(whitelist);
-        return ECDSAUpgradeable.recover(digest, whitelist.signature);
+        return ECDSA.recover(digest, whitelist.signature);
     }
 
 }
