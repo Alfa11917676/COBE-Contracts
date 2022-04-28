@@ -6,15 +6,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./BackEnd_CBS.sol";
 
 contract CBS is ERC20,Ownable,Backend{
-    constructor() ERC20("CBS_Stable_Coin","CBS"){
-
-    }
+    constructor() ERC20("CBS_Stable_Coin","CBS"){}
     uint public currentSupply;
     address public signer;
-    mapping (address => bool) public onlyControllers;
     mapping (address => mapping (uint => bool)) public nonceChecker;
-
-
 
     function mintToken (BackendSigner memory backend) external {
             require (getSigner(backend) == signer,'!Signer');
@@ -27,14 +22,9 @@ contract CBS is ERC20,Ownable,Backend{
             _mint(msg.sender, backend.amount);
     }
 
-    function burnCBSFromPartnerControllers (address _user, uint _amount) external {
-            require(onlyControllers[msg.sender],'!Controller');
+    function burnCBSFromPartnerControllers (uint _amount) external {
             currentSupply -= _amount;
-            _burn(_user, _amount);
-    }
-
-    function addControllers(address _controllers) external onlyOwner {
-        onlyControllers[_controllers] = true;
+            _burn(msg.sender, _amount);
     }
 
     function setSigner(address _signer) external onlyOwner {

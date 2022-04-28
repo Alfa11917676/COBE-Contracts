@@ -16,25 +16,25 @@ async function main() {
   // We get the contract to deploy
   // const Greeter = await hre.ethers.getContractFactory("Greeter");
   // const greeter = await Greeter.deploy("Hello, Hardhat!");
-  const CBS = await hre.ethers.getContractFactory('CBS')
-  const CBR = await hre.ethers.getContractFactory('CBR')
-  const cbr = await CBR.deploy()
-  await cbr.deployed()
-  const cbs = await CBS.deploy()
-  await cbs.deployed()
-  const Escrow = await hre.ethers.getContractFactory('escrow')
-  const escrow = await Escrow.deploy()
-  await escrow.deployed();
-  const Proxy = await hre.ethers.getContractFactory('UnstructuredProxy')
-  const proxy = await  Proxy.deploy()
-  await proxy.deployed()
-  await proxy.upgradeTo(escrow.address)
-  console.log('Implementation Upgraded')
-  console.log("CBS deployed to:", cbs.address);
-  console.log("CBR deployed to:", cbr.address);
-  console.log("Implementation deployed to:", escrow.address);
-  console.log("Proxy deployed to:", proxy.address);
-  const CBE = await hre.ethers.getContractFactory('CBE')
+  // const CBS = await hre.ethers.getContractFactory('CBS')
+  // const CBR = await hre.ethers.getContractFactory('CBR')
+  // const cbr = await CBR.deploy()
+  // await cbr.deployed()
+  // const cbs = await CBS.deploy()
+  // await cbs.deployed()
+  // const Escrow = await hre.ethers.getContractFactory('escrow')
+  // const escrow = await Escrow.deploy()
+  // await escrow.deployed();
+  // const Proxy = await hre.ethers.getContractFactory('UnstructuredProxy')
+  // const proxy = await  Proxy.deploy()
+  // await proxy.deployed()
+  // await proxy.upgradeTo(escrow.address)
+  // console.log('Implementation Upgraded')
+  // console.log("CBS deployed to:", cbs.address);
+  // console.log("CBR deployed to:", cbr.address);
+  // console.log("Implementation deployed to:", escrow.address);
+  // console.log("Proxy deployed to:", proxy.address);
+  const CBE = await hre.ethers.getContractFactory('CBS')
   const cbe = await CBE.deploy()
   await cbe.deployed()
   console.log('CBE is deployed @ ', cbe.address)
