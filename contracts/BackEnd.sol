@@ -14,6 +14,7 @@ contract Backend is EIP712Upgradeable {
         address senderAddress; //the address of the interacting user
         address receiverAddress;
         bool action; // this should be mint/burn. If mint = true, if burn = false.
+        uint256 numberOfSlots;
         uint256 slotId;
         uint256 timestamp; //nonce
         uint256 bankBalance;
@@ -33,10 +34,11 @@ contract Backend is EIP712Upgradeable {
 
     function _hash(BackendSigner memory whitelist) internal view returns (bytes32) {
         return _hashTypedDataV4(keccak256(abi.encode(
-                keccak256("BackendSigner(address senderAddress,address receiverAddress,bool action,uint256 slotId,uint256 timestamp,uint256 bankBalance,uint256 amount)"),
+                keccak256("BackendSigner(address senderAddress,address receiverAddress,bool action,uint256 numberOfSlots,uint256 slotId,uint256 timestamp,uint256 bankBalance,uint256 amount)"),
                 whitelist.senderAddress,
                 whitelist.receiverAddress,
                 whitelist.action,
+                whitelist.mileStoneSlot,
                 whitelist.slotId,
                 whitelist.timestamp,
                 whitelist.bankBalance,
