@@ -38,7 +38,7 @@ contract Backend is EIP712Upgradeable {
                 whitelist.senderAddress,
                 whitelist.receiverAddress,
                 whitelist.action,
-                whitelist.mileStoneSlot,
+                whitelist.numberOfSlots,
                 whitelist.slotId,
                 whitelist.timestamp,
                 whitelist.bankBalance,
