@@ -34,7 +34,7 @@ async function main() {
   // console.log("CBR deployed to:", cbr.address);
   // console.log("Implementation deployed to:", escrow.address);
   // console.log("Proxy deployed to:", proxy.address);
-  const CBE = await hre.ethers.getContractFactory('CBS')
+  const CBE = await hre.ethers.getContractFactory('escrow')
   const cbe = await CBE.deploy()
   await cbe.deployed()
   console.log('CBE is deployed @ ', cbe.address)
