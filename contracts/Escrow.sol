@@ -15,6 +15,7 @@ contract escrow is Backend, OwnableUpgradeable {
     event MileStoneWithdraw(address indexed sender, address indexed receiver, uint256 payments);
     event Withdrawn(address indexed sender, address indexed receiver, uint256 weiAmount);
     event ForcedWithdrawn(address indexed withdrawe, uint256 weiAmount);
+    event ForcedMileStoneWithdrawn(address indexed withdrawe, uint256 weiAmount);
     ICBS CBS;
     ICBR CBR;
     IERC20Upgradeable CBE;
@@ -28,6 +29,7 @@ contract escrow is Backend, OwnableUpgradeable {
     mapping (address => mapping (uint => mapping (address => mapping (uint => uint)))) public mileStonePaymentAmount;
     mapping (address => mapping (uint => uint)) public mileStonePaymentSlots;
     mapping (address => mapping (uint => uint)) public mileStonePaymentReleased;
+    mapping (address => mapping (uint => bool)) public nonce;
 
     function initialize(address _cbs, address _cbr) public initializer {
         __Backend_init();
@@ -52,6 +54,8 @@ contract escrow is Backend, OwnableUpgradeable {
         require (getSigner(whitelist) == signer,'!Signer');
         require (msg.sender == whitelist.senderAddress || msg.sender == owner(),'!Allowed');
         require (_spents[whitelist.senderAddress][whitelist.slotId] + whitelist.amount<=_deposits[msg.sender][whitelist.slotId],'Not Allowed');
+        require (!nonce[whitelist.senderAddress][whitelist.timestamp],'!Already Done');
+        nonce[whitelist.senderAddress][whitelist.timestamp] = true;
         if (_spents[whitelist.senderAddress][whitelist.slotId] + whitelist.amount == _deposits[msg.sender][whitelist.slotId])
             delete _deposits[whitelist.senderAddress][whitelist.slotId];
         _spents[whitelist.senderAddress][whitelist.slotId] += whitelist.amount;
@@ -64,6 +68,8 @@ contract escrow is Backend, OwnableUpgradeable {
         require (getSigner(whitelist) == signer, '!Signer');
         require (msg.sender == whitelist.senderAddress || msg.sender == owner(),'!Allowed');
         require (_spents[whitelist.senderAddress][whitelist.slotId]+ whitelist.amount<=_deposits[whitelist.senderAddress][whitelist.slotId],'Not Allowed');
+        require (!nonce[whitelist.senderAddress][whitelist.timestamp],'!Already Done');
+        nonce[whitelist.senderAddress][whitelist.timestamp] = true;
         if (_spents[whitelist.senderAddress][whitelist.slotId] + whitelist.amount == _deposits[whitelist.senderAddress][whitelist.slotId])
             delete _deposits[whitelist.senderAddress][whitelist.slotId];
         _spents[whitelist.senderAddress][whitelist.slotId] += whitelist.amount;
@@ -92,17 +98,19 @@ contract escrow is Backend, OwnableUpgradeable {
     function withdrawMileStonePayment (BackendSigner memory whitelist) external {
         require (getSigner(whitelist) == signer,'!Signer');
         require (msg.sender == whitelist.senderAddress || owner() == msg.sender,'!Allowed');
-        require (mileStonePaymentReleased[msg.sender][whitelist.slotId]+1 <= mileStonePaymentSlots[msg.sender][whitelist.slotId],'Miles Stones Over');
-        mileStonePaymentReleased[msg.sender][whitelist.slotId]+=1;
-        uint amountToSend = mileStonePaymentAmount[msg.sender][whitelist.slotId]
-        [senderSlotToReceiver[msg.sender][whitelist.slotId]]
-        [mileStonePaymentReleased[msg.sender][whitelist.slotId]];
+        require (mileStonePaymentReleased[whitelist.senderAddress][whitelist.slotId]+1 <= mileStonePaymentSlots[msg.sender][whitelist.slotId],'Miles Stones Over');
+        require (!nonce[whitelist.senderAddress][whitelist.timestamp],'!Already Done');
+        nonce[whitelist.senderAddress][whitelist.timestamp] = true;
+        mileStonePaymentReleased[whitelist.senderAddress][whitelist.slotId]+=1;
+        uint amountToSend = mileStonePaymentAmount[whitelist.senderAddress][whitelist.slotId]
+        [senderSlotToReceiver[whitelist.senderAddress][whitelist.slotId]]
+        [mileStonePaymentReleased[whitelist.senderAddress][whitelist.slotId]];
         require (
             _spents[whitelist.senderAddress][whitelist.slotId]+
-            mileStonePaymentAmount[msg.sender]
+            mileStonePaymentAmount[whitelist.senderAddress]
             [whitelist.slotId]
-            [senderSlotToReceiver[msg.sender][whitelist.slotId]]
-            [mileStonePaymentReleased[msg.sender][whitelist.slotId]]
+            [senderSlotToReceiver[whitelist.senderAddress][whitelist.slotId]]
+            [mileStonePaymentReleased[whitelist.senderAddress][whitelist.slotId]]
             <=
             _deposits[whitelist.senderAddress][whitelist.slotId],
                 'Not Allowed');
@@ -113,40 +121,43 @@ contract escrow is Backend, OwnableUpgradeable {
             )
             delete _deposits[whitelist.senderAddress][whitelist.slotId];
         _spents[whitelist.senderAddress][whitelist.slotId] += amountToSend;
-        delete mileStonePaymentAmount[msg.sender][backend.slotId]
-        [senderSlotToReceiver[msg.sender][backend.slotId]]
-        [mileStonePaymentReleased[msg.sender][backend.slotId]];
+        delete mileStonePaymentAmount[whitelist.senderAddress][whitelist.slotId]
+        [senderSlotToReceiver[whitelist.senderAddress][whitelist.slotId]]
+        [mileStonePaymentReleased[whitelist.senderAddress][whitelist.slotId]];
         CBS.transfer(
                         senderSlotToReceiver[whitelist.senderAddress][whitelist.slotId],amountToSend
         );
-        CBR.burnCBRFromPartnerControllers(msg.sender, amountToSend);
+        CBR.burnCBRFromPartnerControllers(whitelist.senderAddress, amountToSend);
 
-        emit MileStoneWithdraw(msg.sender, senderSlotToReceiver[whitelist.senderAddress][whitelist.slotId], amountToSend);
+        emit MileStoneWithdraw(whitelist.senderAddress, senderSlotToReceiver[whitelist.senderAddress][whitelist.slotId], amountToSend);
     }
 
     function mutualCancellationOfMileStonePayment(Backend memory backend) external {
         require (getSigner(whitelist) == signer, '!Signer');
         require (msg.sender == whitelist.senderAddress || msg.sender == owner(),'!Allowed');
         require (mileStonePaymentSlots[msg.sender][whitelist.slotId]>=mileStonePaymentReleased[msg.sender][backend.slotId]+1,'None remaining');
+        require (!nonce[whitelist.senderAddress][whitelist.timestamp],'!Already Done');
+        nonce[whitelist.senderAddress][whitelist.timestamp] = true;
         uint totalMileStoneReamining = mileStonePaymentSlots[msg.sender][whitelist.slotId];// - mileStonePaymentReleased[msg.sender][backend.slotId];
         uint toStart = mileStonePaymentReleased[msg.sender][backend.slotId]+1;
         uint totalMoney;
         for (uint i = toStart; i <= totalMileStoneReamining; i++) {
-            mileStonePaymentReleased[msg.sender][backend.slotId]+=1;
-            totalMoney+=mileStonePaymentAmount[msg.sender][backend.slotId]
-            [senderSlotToReceiver[msg.sender][backend.slotId]]
-            [mileStonePaymentReleased[msg.sender][backend.slotId]];
-            delete mileStonePaymentAmount[msg.sender][backend.slotId]
-            [senderSlotToReceiver[msg.sender][backend.slotId]]
-            [mileStonePaymentReleased[msg.sender][backend.slotId]];
+            mileStonePaymentReleased[backend.senderAddress][backend.slotId]+=1;
+            totalMoney+=mileStonePaymentAmount[backend.senderAddress][backend.slotId]
+            [senderSlotToReceiver[backend.senderAddress][backend.slotId]]
+            [mileStonePaymentReleased[backend.senderAddress][backend.slotId]];
+            delete mileStonePaymentAmount[backend.senderAddress][backend.slotId]
+            [senderSlotToReceiver[backend.senderAddress][backend.slotId]]
+            [mileStonePaymentReleased[backend.senderAddress][backend.slotId]];
 
         }
-        _spents[whitelist.senderAddress][whitelist.slotId] += totalMoney;
-        delete _deposits[msg.sender][whitelist.slotId];
-        delete senderSlotToReceiver[msg.sender][backend.slotId];
-        delete mileStonePaymentSlots[msg.sender][backend.slotId];
-        CBS.transfer(msg.sender, totalMoney);
-        CBR.burnCBRFromPartnerControllers(msg.sender, totalMoney);
+        _spents[backend.senderAddress][backend.slotId] += totalMoney;
+        delete _deposits[backend.senderAddress][backend.slotId];
+        delete senderSlotToReceiver[backend.senderAddress][backend.slotId];
+        delete mileStonePaymentSlots[backend.senderAddress][backend.slotId];
+        CBS.transfer(backend.senderAddress, totalMoney);
+        CBR.burnCBRFromPartnerControllers(backend.senderAddress, totalMoney);
+        emit ForcedMileStoneWithdrawn(backend.senderAddress, totalMoney);
     }
 
     function addCBSAddress (address _token) external onlyOwner {
