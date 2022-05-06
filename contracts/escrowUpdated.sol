@@ -137,13 +137,13 @@ contract escrow is Backend, OwnableUpgradeable {
         require (mileStonePaymentReleased[msg.sender][whitelist.slotId] <= mileStonePaymentSlots[msg.sender][whitelist.slotId],'!Allowed');
         uint finalAmount;
         for (uint i=0;i<_mileStoneId.length;i++) {
-            require( _milestoneId[i] <=mileStonePaymentSlots[msg.sender][whitelist.slotId],"Exceeds Milestones");
+            require( _mileStoneId[i] <=mileStonePaymentSlots[msg.sender][whitelist.slotId],"Exceeds Milestones");
             finalAmount= mileStonePaymentAmount[msg.sender][whitelist.slotId]
             [senderSlotToReceiver[msg.sender][whitelist.slotId]]
-            [_milestoneId[i]];
+            [_mileStoneId[i]];
             delete mileStonePaymentAmount[msg.sender][whitelist.slotId]
             [senderSlotToReceiver[msg.sender][whitelist.slotId]]
-            [_milestoneId[i]];
+            [_mileStoneId[i]];
         }
         _spents[whitelist.senderAddress][whitelist.slotId] += finalAmount;
         require (
